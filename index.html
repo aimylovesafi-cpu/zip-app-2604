@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HOUSE INFINITE">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="logo.png">
+    <meta name="theme-color" content="#000000">
+
+  
+    <title>HOUSE INFINITE</title>
+    
+    <link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/webp" href="logo.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000000;
+            color: #00f5ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            height: 100vh;
+            overflow: hidden;
+            cursor: default;
+            transition: filter 0.1s;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        html {
+            height: -webkit-fill-available;
+        }
+
+        body.hide-cursor { cursor: none; }
+        body.kick { filter: brightness(1.6) contrast(1.3); }
+
+      .playlist-drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60vh;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 2px solid #00f5ff;
+            box-shadow: 0 10px 40px rgba(0, 245, 255, 0.3);
+            transform: translateY(-100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            padding-top: env(safe-area-inset-top);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+      .playlist-drawer.open {
+            transform: translateY(0);
+        }
+
+      .playlist-handle {
+            position: fixed;
+            top: env(safe-area-inset-top);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 12px;
+            background: rgba(0, 245, 255, 0.15);
+            border: 1px solid #00f5ff;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            cursor: pointer;
+            z-index: 101;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+            transition: all 0.3s, opacity 0.4s;
+        }
+
+        body.hide-ui.playlist-handle {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+      .playlist-handle:active {
+            background: rgba(0, 245, 255, 0.3);
+        }
+
+      .playlist-handle::after {
+            content: '';
+            width: 24px;
+            height: 2px;
+            background: #00f5ff;
+            border-radius: 1px;
+            box-shadow: 0 0 8px #00f5ff;
+        }
+
+      .playlist-header {
+            padding: 15px 20px 10px;
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #00f5ff;
+            text-shadow: 0 0 10px #00f5ff;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+        }
+
+      .playlist-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+      .playlist-item {
+            padding: 12px 20px;
+            font-size: 11px;
+            color: #00ccff;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+      .playlist-item:hover {
+            background: rgba(0, 245, 255, 0.1);
+            color: #fff;
+            text-shadow: 0 0 8px #00f5ff;
+        }
+
+      .playlist-item.active {
+            background: rgba(0, 245, 255, 0.2);
+            color: #00f5ff;
+            text-shadow: 0 0 10px #00f5ff;
+            border-left: 3px solid #00f5ff;
+        }
+
+      .playlist-empty {
+            padding: 40px 20px;
+            text-align: center;
+            font-size: 10px;
+            color: #0088aa;
+            opacity: 0.6;
+        }
+
+      .visualizer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+      .circle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            animation: pulse 0.5s ease-out;
+            box-shadow: 0 0 60px currentColor, inset 0 0 35px currentColor;
+            border: 3px solid currentColor;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(15); opacity: 0; }
+        }
+
+      .container {
+            text-align: center;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: opacity 0.4s, transform 0.4s;
+        }
+
+        body.hide-ui.container {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+      .neon-aura {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 350px;
+            height: 180px;
+            background: radial-gradient(ellipse, rgba(0,245,255,0.2) 0%, rgba(255,0,255,0.15) 40%, transparent 70%);
+            filter: blur(35px);
+            z-index: -1;
+            animation: breathe 4s ease-in-out infinite;
+        }
+      .neon-aura.playing {
+            animation: none;
+            opacity: 0.4;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.25; transform: translateX(-50%) scale(0.95); }
+            50% { opacity: 0.5; transform: translateX(-50%) scale(1.05); }
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 18px;
+            text-shadow:
+                0 0 10px #00f5ff,
+                0 0 20px #00f5ff,
+                0 0 40px #00f5ff,
+                0 0 80px #0088ff;
+            font-weight: 700;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 2;
+        }
+
+      .infinity-symbol {
+            font-size: 65px;
+            margin: 0 auto 10px;
+            color: #ffffff;
+            text-shadow:
+                0 0 15px #00f5ff,
+                0 0 30px #00f5ff,
+                0 0 45px #ff00ff,
+                0 0 60px #00f5ff;
+            transition: all 0.03s;
+            line-height: 1;
+            position: relative;
+            z-index: 2;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+      .infinity-symbol.kick {
+            transform: scale(1.4);
+            text-shadow:
+                0 0 30px #00f5ff,
+                0 0 60px #00f5ff,
+                0 0 90px #ff00ff,
+                0 0 120px #00f5ff;
+        }
+
+      .subtitle {
+            color: #00ccff;
+            margin-bottom: 30px;
+            font-size: 11px;
+            text-shadow: 0 0 12px #00ccff;
+            font-weight: 300;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 2;
+        }
+
+      .btn-wrapper {
+            position: relative;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 10px;
+            z-index: 11;
+        }
+
+        #playBtn, #loadBtn {
+            background: #ffffff;
+            border: none;
+            color: #000;
+            padding: 12px 30px;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow:
+                0 0 12px #00f5ff,
+                0 0 25px #00f5ff,
+                0 0 50px #0088ff;
+            transition: all 0.2s;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 2;
+        }
+        #playBtn:hover, #loadBtn:hover {
+            transform: scale(1.05);
+            box-shadow:
+                0 0 20px #00f5ff,
+                0 0 40px #00f5ff,
+                0 0 80px #0088ff;
+        }
+        #playBtn.playing {
+            background: linear-gradient(135deg, #ff0088, #ff0066);
+            color: #fff;
+            box-shadow:
+                0 0 18px #ff0088,
+                0 0 35px #ff0088,
+                0 0 70px #ff0066;
+        }
+
+      .stats {
+            font-size: 10px;
+            color: #00ccff;
+            text-shadow: 0 0 8px #00ccff;
+            line-height: 1.6;
+            font-weight: 300;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            gap: 15px;
+        }
+
+      .track-info {
+            margin-top: 12px;
+            font-size: 11px;
+            color: #ffaa00;
+            min-height: 16px;
+            text-shadow: 0 0 10px #ffaa00;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #progressContainer {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            max-width: 500px;
+            height: 8px;
+            background: rgba(0, 245, 255, 0.15);
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.2);
+            z-index: 20;
+            transition: opacity 0.4s;
+        }
+
+        body.hide-ui #progressContainer {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #progressBar {
+            height: 100%;
+            background: #00f5ff;
+            border-radius: 4px;
+            width: 0%;
+            box-shadow: 0 0 15px #00f5ff, 0 0 30px #00f5ff, 0 0 45px #0088ff;
+            transition: width 0.1s linear;
+            position: relative;
+        }
+
+        #progressBar::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00f5ff, 0 0 30px #00f5ff;
+        }
+
+        #timeDisplay {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00f5ff;
+            font-size: 11px;
+            text-shadow: 0 0 10px #00f5ff;
+            z-index: 20;
+            transition: opacity 0.4s;
+        }
+
+        body.hide-ui #timeDisplay {
+            opacity: 0;
+        }
+
+      .footer {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            color: #00ccff;
+            z-index: 10;
+            font-weight: 300;
+            letter-spacing: 1px;
+            transition: opacity 0.4s;
+            padding-bottom: env(safe-area-inset-bottom);
+            animation: footerBreathe 3s ease-in-out infinite;
+        }
+
+        @keyframes footerBreathe {
+            0%, 100% {
+                text-shadow: 0 0 5px #00ccff, 0 0 10px #00ccff, 0 0 15px #0088ff;
+                opacity: 0.8;
+            }
+            50% {
+                text-shadow: 0 0 10px #00f5ff, 0 0 20px #00f5ff, 0 0 30px #00aaff, 0 0 40px #0088ff;
+                opacity: 1;
+            }
+        }
+
+        body.hide-ui.footer {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #audioFile { display: none; }
+
+        #audio {
+            display: none!important;
+            width: 0;
+            height: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="playlist-handle" id="playlistHandle"></div>
+
+    <div class="playlist-drawer" id="playlistDrawer">
+        <div class="playlist-header">PLAYLIST</div>
+        <div class="playlist-items" id="playlistItems">
+            <div class="playlist-empty">No tracks loaded yet</div>
+        </div>
+    </div>
+
+    <div class="visualizer" id="visualizer"></div>
+
+    <div class="container">
+        <div class="neon-aura" id="titleAura"></div>
+        <h1>HOUSE INFINITE</h1>
+        <div class="infinity-symbol" id="infinitySymbol">♾️</div>
+        <div class="subtitle">Music Visualizer</div>
+
+        <div class="btn-wrapper">
+            <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.ogg,audio/*" multiple>
+            <button id="loadBtn">LOAD</button>
+            <button id="playBtn" disabled>PLAY</button>
+        </div>
+
+        <div class="stats">
+            <div>BASS: <span id="bassLevel">0</span>%</div>
+            <div>MID: <span id="midLevel">0</span>%</div>
+            <div>HIGH: <span id="highLevel">0</span>%</div>
+        </div>
+
+        <div class="track-info" id="trackInfo">No track loaded</div>
+    </div>
+
+    <div id="progressContainer">
+        <div id="progressBar"></div>
+    </div>
+    <div id="timeDisplay">0:00 / 0:00</div>
+
+    <div class="footer">
+
+        Made with 💖 for Afarin by Afshin.
+    </div>
+
+    <audio id="audio" crossorigin="anonymous" preload="auto"></audio>
+
+    <script>
+        let audioContext, analyser, source, dataArray;
+        let isPlaying = false;
+        let animationId;
+        let hideUITimeout;
+        let playlist = [];
+        let currentTrackIndex = -1;
+        let audioConnected = false;
+
+        const audio = document.getElementById('audio');
+        const audioFile = document.getElementById('audioFile');
+        const playBtn = document.getElementById('playBtn');
+        const loadBtn = document.getElementById('loadBtn');
+        const trackInfo = document.getElementById('trackInfo');
+        const visualizer = document.getElementById('visualizer');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const body = document.body;
+        const playlistDrawer = document.getElementById('playlistDrawer');
+        const playlistHandle = document.getElementById('playlistHandle');
+        const playlistItems = document.getElementById('playlistItems');
+
+        playlistHandle.onclick = (e) => {
+            e.stopPropagation();
+            playlistDrawer.classList.toggle('open');
+        };
+
+        document.addEventListener('click', (e) => {
+            if (!playlistDrawer.contains(e.target) &&!playlistHandle.contains(e.target)) {
+                playlistDrawer.classList.remove('open');
+            }
+        });
+
+        function showUI() {
+            body.classList.remove('hide-ui');
+            body.classList.remove('hide-cursor');
+            clearTimeout(hideUITimeout);
+
+            if (isPlaying) {
+                hideUITimeout = setTimeout(() => {
+                    body.classList.add('hide-ui');
+                    body.classList.add('hide-cursor');
+                }, 3000);
+            }
+        }
+
+        document.addEventListener('mousemove', showUI);
+        document.addEventListener('touchstart', showUI);
+        document.addEventListener('touchmove', showUI);
+
+        const neonColors = ['#00f5ff', '#ff00ff', '#00ff88', '#ffaa00', '#ff0088', '#8800ff'];
+
+        function createPulse() {
+            const color = neonColors[Math.floor(Math.random() * neonColors.length)];
+            const circle = document.createElement('div');
+            circle.className = 'circle';
+            circle.style.left = Math.random() * 100 + '%';
+            circle.style.top = Math.random() * 100 + '%';
+            circle.style.width = '80px';
+            circle.style.height = '80px';
+            circle.style.color = color;
+            circle.style.borderColor = color;
+            visualizer.appendChild(circle);
+            setTimeout(() => circle.remove(), 500);
+        }
+
+        function setupAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 1024;
+                analyser.smoothingTimeConstant = 0.8;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+
+            if (!audioConnected) {
+                source = audioContext.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                audioConnected = true;
+            }
+        }
+
+        function renderPlaylist() {
+            if (playlist.length === 0) {
+                playlistItems.innerHTML = '<div class="playlist-empty">No tracks loaded yet</div>';
+                return;
+            }
+
+            playlistItems.innerHTML = playlist.map((track, index) => `
+                <div class="playlist-item ${index === currentTrackIndex? 'active' : ''}" data-index="${index}">
+                    ${index + 1}. ${track.name}
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.playlist-item').forEach(item => {
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(item.dataset.index);
+                    playTrack(index);
+                    playlistDrawer.classList.remove('open');
+                };
+            });
+        }
+
+        function playTrack(index) {
+            if (index < 0 || index >= playlist.length) return;
+
+            currentTrackIndex = index;
+            const track = playlist[index];
+            audio.src = track.url;
+            trackInfo.textContent = track.name;
+            audio.load();
+            setupAudio();
+            audio.play().catch(err => console.log('Play error:', err));
+            renderPlaylist();
+        }
+
+        loadBtn.onclick = (e) => {
+            e.stopPropagation();
+            audioFile.click();
+        };
+
+        audioFile.onchange = e => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                files.forEach(file => {
+                    const url = URL.createObjectURL(file);
+                    playlist.push({ name: file.name, url: url, file: file });
+                });
+
+                renderPlaylist();
+
+                if (currentTrackIndex === -1) {
+                    playTrack(0);
+                }
+
+                playBtn.disabled = false;
+            }
+        };
+
+        playBtn.onclick = async (e) => {
+            e.stopPropagation();
+            setupAudio();
+
+            if (audioContext && audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+
+            if (isPlaying) {
+                audio.pause();
+            } else {
+                if (currentTrackIndex === -1 && playlist.length > 0) {
+                    playTrack(0);
+                } else {
+                    audio.play().catch(err => console.log('Play error:', err));
+                }
+            }
+        };
+
+        audio.onplay = () => {
+            isPlaying = true;
+            playBtn.textContent = 'PAUSE';
+            playBtn.classList.add('playing');
+            document.getElementById('titleAura').classList.add('playing');
+            showUI();
+            draw();
+        };
+
+        audio.onpause = () => {
+            isPlaying = false;
+            playBtn.textContent = 'PLAY';
+            playBtn.classList.remove('playing');
+            document.getElementById('titleAura').classList.remove('playing');
+            body.classList.remove('hide-ui');
+            body.classList.remove('hide-cursor');
+            clearTimeout(hideUITimeout);
+            if (animationId) cancelAnimationFrame(animationId);
+        };
+
+        audio.onended = () => {
+            if (currentTrackIndex < playlist.length - 1) {
+                playTrack(currentTrackIndex + 1);
+            } else {
+                isPlaying = false;
+                playBtn.textContent = 'PLAY';
+                playBtn.classList.remove('playing');
+                document.getElementById('titleAura').classList.remove('playing');
+                body.classList.remove('hide-ui');
+                body.classList.remove('hide-cursor');
+                clearTimeout(hideUITimeout);
+            }
+        };
+
+        audio.ontimeupdate = () => {
+            if (audio.duration) {
+                const percent = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = percent + '%';
+                timeDisplay.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
+            }
+        };
+
+        progressContainer.onclick = (e) => {
+            const rect = progressContainer.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = percent * audio.duration;
+        };
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return mins + ':' + (secs < 10? '0' : '') + secs;
+        }
+
+        let lastBass = 0;
+        let lastMid = 0;
+        let lastHigh = 0;
+
+        function draw() {
+            if (!isPlaying) return;
+            animationId = requestAnimationFrame(draw);
+
+            if (!analyser) return;
+
+            analyser.getByteFrequencyData(dataArray);
+
+            let bass = 0, mid = 0, high = 0;
+            const bassEnd = Math.floor(dataArray.length * 0.06);
+            const midEnd = Math.floor(dataArray.length * 0.3);
+
+            for(let i = 0; i < bassEnd; i++) bass += dataArray[i];
+            for(let i = bassEnd; i < midEnd; i++) mid += dataArray[i];
+            for(let i = midEnd; i < dataArray.length; i++) high += dataArray[i];
+
+            bass = (bass / bassEnd) / 255;
+            mid = (mid / (midEnd - bassEnd)) / 255;
+            high = (high / (dataArray.length - midEnd)) / 255;
+
+            document.getElementById('bassLevel').textContent = Math.round(bass * 100);
+            document.getElementById('midLevel').textContent = Math.round(mid * 100);
+            document.getElementById('highLevel').textContent = Math.round(high * 100);
+
+            const kickDelta = bass - lastBass;
+            if (kickDelta > 0.08 && bass > 0.35) {
+                createPulse();
+                document.getElementById('infinitySymbol').classList.add('kick');
+                body.classList.add('kick');
+                setTimeout(() => {
+                    document.getElementById('infinitySymbol').classList.remove('kick');
+                    body.classList.remove('kick');
+                }, 60);
+            }
+            lastBass = bass * 0.7 + lastBass * 0.3;
+
+            const midDelta = mid - lastMid;
+            if (midDelta > 0.05 && mid > 0.25 && Math.random() < mid * 0.6) {
+                createPulse();
+            }
+            lastMid = mid * 0.8 + lastMid * 0.2;
+
+            const highDelta = high - lastHigh;
+            if (highDelta > 0.04 && high > 0.2 && Math.random() < high * 0.8) {
+                createPulse();
+            }
+            lastHigh = high * 0.8 + lastHigh * 0.2;
+        }
+
+    </script>
+</body>
+</html>
